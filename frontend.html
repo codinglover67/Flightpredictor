@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FlightSense — Flight Risk Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #f5f0e8;
+  --bg2: #ede8de;
+  --ink: #1a1410;
+  --ink2: #4a3f35;
+  --muted: #9a8f85;
+  --border: #d5cfc5;
+  --accent: #c8391a;
+  --accent2: #1a5fc8;
+  --accent3: #2a9c5a;
+  --warn: #e08c1a;
+  --surface: #faf7f2;
+  --shadow: rgba(26,20,16,0.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:0.4;}
+.runway{height:4px;background:repeating-linear-gradient(90deg,var(--accent) 0px,var(--accent) 40px,transparent 40px,transparent 60px);width:100%;}
+header{padding:48px 40px 36px;display:flex;align-items:flex-end;justify-content:space-between;border-bottom:2px solid var(--ink);animation:fadeIn 0.6s ease both;}
+.brand-name{font-family:'Bebas Neue',sans-serif;font-size:clamp(3rem,8vw,5.5rem);line-height:0.9;letter-spacing:0.04em;}
+.brand-name span{color:var(--accent);}
+.brand-sub{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-top:6px;}
+.header-meta{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--muted);line-height:1.8;}
+.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent3);margin-right:5px;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+.layout{display:grid;grid-template-columns:360px 1fr;min-height:calc(100vh - 180px);}
+.sidebar{border-right:2px solid var(--ink);padding:32px;background:var(--surface);animation:slideIn 0.6s ease 0.1s both;}
+.mode-switcher{display:flex;flex-direction:column;gap:3px;margin-bottom:28px;}
+.mode-btn{display:flex;align-items:center;gap:12px;padding:14px 16px;background:transparent;border:2px solid transparent;border-radius:4px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:0.88rem;color:var(--ink2);text-align:left;transition:all 0.15s;letter-spacing:0.02em;}
+.mode-btn:hover{background:var(--bg2);border-color:var(--border);}
+.mode-btn.active{background:var(--ink);color:var(--bg);border-color:var(--ink);}
+.mode-icon{width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:16px;border-radius:6px;background:var(--bg2);flex-shrink:0;}
+.mode-btn.active .mode-icon{background:rgba(255,255,255,0.1);}
+.sidebar-divider{height:1px;background:var(--border);margin:20px 0;}
+.sidebar-label{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.stats-strip{display:flex;flex-direction:column;gap:8px;}
+.stat-item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--bg2);border-radius:6px;border-left:3px solid var(--border);}
+.stat-item.red{border-color:var(--accent);}.stat-item.blue{border-color:var(--accent2);}.stat-item.green{border-color:var(--accent3);}
+.stat-label{font-size:0.75rem;color:var(--ink2);}
+.stat-value{font-family:'IBM Plex Mono',monospace;font-size:0.8rem;font-weight:500;color:var(--ink);}
+.info-box{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:14px;font-size:0.78rem;color:var(--ink2);line-height:1.6;}
+.info-box strong{color:var(--ink);}
+.main-panel{padding:32px 40px;animation:fadeIn 0.6s ease 0.2s both;}
+.panel-title{font-family:'Bebas Neue',sans-serif;font-size:2.2rem;letter-spacing:0.06em;color:var(--ink);margin-bottom:4px;}
+.panel-desc{font-size:0.78rem;color:var(--muted);margin-bottom:24px;font-family:'IBM Plex Mono',monospace;}
+.form-section{margin-bottom:24px;}
+.section-label{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.section-label::before{content:'';display:block;width:12px;height:2px;background:var(--accent);}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+label{font-size:0.67rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink2);font-family:'IBM Plex Mono',monospace;}
+input,select{background:var(--surface);border:1.5px solid var(--border);border-radius:6px;color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:0.85rem;padding:9px 11px;outline:none;transition:border-color 0.15s,box-shadow 0.15s;width:100%;appearance:none;-webkit-appearance:none;}
+input:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0 3px rgba(26,20,16,0.06);}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%234a3f35' d='M5 7L1 2h8z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:28px;}
+.btn-predict{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:15px 24px;background:var(--ink);border:none;border-radius:6px;color:var(--bg);font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:0.12em;cursor:pointer;margin-top:8px;transition:all 0.15s;position:relative;overflow:hidden;}
+.btn-predict::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent);}
+.btn-predict:hover{background:var(--accent);transform:translateY(-1px);box-shadow:0 6px 20px var(--shadow);}
+.btn-predict:active{transform:translateY(0);}
+.btn-predict:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(245,240,232,0.3);border-top-color:var(--bg);border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.panel{display:none;}.panel.active{display:block;}
+.results{display:none;margin-top:28px;}.results.visible{display:block;animation:fadeIn 0.4s ease both;}
+.results-header{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:0.08em;color:var(--ink);margin-bottom:16px;display:flex;align-items:center;gap:12px;}
+.results-header::after{content:'';flex:1;height:2px;background:var(--border);}
+.model-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:16px;}
+.model-card{background:var(--surface);border:2px solid var(--border);border-radius:8px;padding:18px;position:relative;overflow:hidden;transition:transform 0.2s;}
+.model-card:hover{transform:translateY(-2px);}
+.model-card-accent{position:absolute;top:0;left:0;right:0;height:3px;}
+.model-card.rf .model-card-accent{background:var(--accent2);}
+.model-card.xgb .model-card-accent{background:var(--accent);}
+.model-tag{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.model-tag-badge{padding:2px 8px;border-radius:100px;font-size:0.6rem;font-weight:600;letter-spacing:0.06em;}
+.rf-badge{background:rgba(26,95,200,0.1);color:var(--accent2);}.xgb-badge{background:rgba(200,57,26,0.1);color:var(--accent);}
+.prob-display{display:flex;align-items:flex-end;gap:6px;margin-bottom:12px;}
+.prob-number{font-family:'Bebas Neue',sans-serif;font-size:3.2rem;line-height:1;letter-spacing:0.02em;}
+.prob-unit{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:var(--muted);padding-bottom:6px;}
+.gauge-track{height:5px;background:var(--bg2);border-radius:100px;overflow:hidden;margin-bottom:10px;}
+.gauge-fill{height:100%;border-radius:100px;width:0%;transition:width 1.2s cubic-bezier(0.4,0,0.2,1);}
+.risk-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:100px;font-family:'IBM Plex Mono',monospace;font-size:0.67rem;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;}
+.risk-low{background:rgba(42,156,90,0.12);color:var(--accent3);}.risk-medium{background:rgba(224,140,26,0.12);color:var(--warn);}.risk-high{background:rgba(200,57,26,0.12);color:var(--accent);}
+.verdict-card{background:var(--surface);border:2px solid var(--ink);border-radius:8px;padding:18px 22px;display:flex;align-items:center;gap:18px;margin-bottom:16px;}
+.verdict-icon{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;}
+.verdict-icon.low{background:rgba(42,156,90,0.12);}.verdict-icon.medium{background:rgba(224,140,26,0.12);}.verdict-icon.high{background:rgba(200,57,26,0.12);}
+.verdict-body h3{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:0.06em;margin-bottom:3px;}
+.verdict-body p{font-size:0.78rem;color:var(--ink2);line-height:1.5;}
+.compare-bar{background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:14px 18px;}
+.compare-title{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
+.compare-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}.compare-row:last-child{margin-bottom:0;}
+.compare-name{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink2);width:115px;flex-shrink:0;}
+.compare-track{flex:1;height:7px;background:var(--bg2);border-radius:100px;overflow:hidden;}
+.compare-fill{height:100%;border-radius:100px;width:0%;transition:width 1.2s cubic-bezier(0.4,0,0.2,1);}
+.compare-val{font-family:'IBM Plex Mono',monospace;font-size:0.75rem;font-weight:500;width:38px;text-align:right;}
+.error-bar{background:rgba(200,57,26,0.08);border:1.5px solid rgba(200,57,26,0.25);border-radius:6px;padding:12px 16px;color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:0.78rem;display:none;margin-top:12px;line-height:1.5;}
+.error-bar.visible{display:block;}
+.history-section{margin-top:28px;border-top:1px solid var(--border);padding-top:20px;}
+.history-title{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.history-log{display:flex;flex-direction:column;gap:5px;max-height:180px;overflow-y:auto;}
+.history-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg2);border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--ink2);animation:fadeIn 0.3s ease both;}
+.history-badge{padding:2px 8px;border-radius:100px;font-size:0.62rem;font-weight:600;}
+.history-time{color:var(--muted);margin-left:auto;flex-shrink:0;}
+footer{border-top:2px solid var(--ink);padding:14px 40px;display:flex;justify-content:space-between;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:0.67rem;color:var(--muted);background:var(--surface);}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-8px);}to{opacity:1;transform:translateX(0);}}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+@media(max-width:900px){.layout{grid-template-columns:1fr;}.sidebar{border-right:none;border-bottom:2px solid var(--ink);}header{padding:24px 20px;flex-direction:column;align-items:flex-start;gap:10px;}.main-panel{padding:24px 20px;}.model-grid{grid-template-columns:1fr;}footer{flex-direction:column;gap:5px;text-align:center;padding:14px 20px;}}
+</style>
+</head>
+<body>
+<div class="runway"></div>
+<header>
+  <div class="brand">
+    <div class="brand-name">Flight<span>Sense</span></div>
+    <div class="brand-sub">Flight Risk Intelligence · BC2407 Team 2 Class 6</div>
+  </div>
+  <div class="header-meta">
+    <div><span class="status-dot"></span>API ONLINE</div>
+    <div>RF + XGBOOST MODELS</div>
+    <div>2022 US DOMESTIC FLIGHTS</div>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-label">Prediction Mode</div>
+    <div class="mode-switcher">
+      <button class="mode-btn active" onclick="switchMode('delay',this)">
+        <div class="mode-icon">⏱</div>
+        <div><div>Arrival Delay</div><div style="font-size:0.72rem;font-weight:400;opacity:0.6;margin-top:1px">Predict ≥15 min delay</div></div>
+      </button>
+      <button class="mode-btn" onclick="switchMode('cancel',this)">
+        <div class="mode-icon">🚫</div>
+        <div><div>Cancellation</div><div style="font-size:0.72rem;font-weight:400;opacity:0.6;margin-top:1px">Predict flight cancel</div></div>
+      </button>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">Model Performance</div>
+    <div class="stats-strip">
+      <div class="stat-item blue"><span class="stat-label">Random Forest</span><span class="stat-value">AUC 0.91+</span></div>
+      <div class="stat-item red"><span class="stat-label">XGBoost</span><span class="stat-value">AUC 0.91+</span></div>
+      <div class="stat-item green"><span class="stat-label">Training Data</span><span class="stat-value">100k rows</span></div>
+      <div class="stat-item"><span class="stat-label">Features</span><span class="stat-value">15 predictors</span></div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">About</div>
+    <div class="info-box">
+      <strong>FlightSense</strong> uses two ML models trained on 2022 US domestic flight data to predict delay and cancellation risk — using only pre-departure information (<strong>no data leakage</strong>).<br/><br/>
+      Models served live via R Plumber API on Render.com.
+    </div>
+  </aside>
+
+  <main class="main-panel">
+
+    <!-- DELAY PANEL -->
+    <div id="panel-delay" class="panel active">
+      <div class="panel-title">Arrival Delay Predictor</div>
+      <div class="panel-desc">// predict probability of arrival delay ≥15 minutes</div>
+      <div class="form-section">
+        <div class="section-label">Airline & Route</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Airline</label>
+            <select id="d-airline">
+              <option value="American Airlines Inc.">American Airlines</option>
+              <option value="Delta Air Lines Inc.">Delta Air Lines</option>
+              <option value="Southwest Airlines Co.">Southwest Airlines</option>
+              <option value="United Air Lines Inc.">United Airlines</option>
+              <option value="Alaska Airlines Inc.">Alaska Airlines</option>
+              <option value="JetBlue Airways">JetBlue Airways</option>
+              <option value="Spirit Air Lines">Spirit Air Lines</option>
+              <option value="Frontier Airlines Inc.">Frontier Airlines</option>
+              <option value="Allegiant Air">Allegiant Air</option>
+              <option value="Hawaiian Airlines Inc.">Hawaiian Airlines</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Origin Airport</label>
+            <select id="d-origin">
+              <option value="ATL">ATL — Atlanta</option><option value="ORD">ORD — Chicago</option><option value="DFW">DFW — Dallas</option><option value="DEN">DEN — Denver</option><option value="CLT">CLT — Charlotte</option><option value="LAX">LAX — Los Angeles</option><option value="LAS">LAS — Las Vegas</option><option value="PHX">PHX — Phoenix</option><option value="MCO">MCO — Orlando</option><option value="SEA">SEA — Seattle</option><option value="EWR">EWR — Newark</option><option value="SFO">SFO — San Francisco</option><option value="BOS">BOS — Boston</option><option value="JFK">JFK — New York</option><option value="MIA">MIA — Miami</option><option value="MSP">MSP — Minneapolis</option><option value="DTW">DTW — Detroit</option><option value="PHL">PHL — Philadelphia</option><option value="FLL">FLL — Ft Lauderdale</option><option value="BWI">BWI — Baltimore</option><option value="OTHER">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Destination Airport</label>
+            <select id="d-dest">
+              <option value="ATL">ATL — Atlanta</option><option value="ORD">ORD — Chicago</option><option value="DFW">DFW — Dallas</option><option value="DEN">DEN — Denver</option><option value="CLT">CLT — Charlotte</option><option value="LAX">LAX — Los Angeles</option><option value="LAS">LAS — Las Vegas</option><option value="PHX">PHX — Phoenix</option><option value="MCO">MCO — Orlando</option><option value="SEA">SEA — Seattle</option><option value="EWR">EWR — Newark</option><option value="SFO">SFO — San Francisco</option><option value="BOS">BOS — Boston</option><option value="JFK">JFK — New York</option><option value="MIA">MIA — Miami</option><option value="MSP">MSP — Minneapolis</option><option value="DTW">DTW — Detroit</option><option value="PHL">PHL — Philadelphia</option><option value="FLL">FLL — Ft Lauderdale</option><option value="BWI">BWI — Baltimore</option><option value="OTHER">Other</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="form-section">
+        <div class="section-label">Schedule & Context</div>
+        <div class="form-grid">
+          <div class="form-group"><label>Dep Time (HHMM)</label><input type="number" id="d-deptime" value="800" min="0" max="2359"/></div>
+          <div class="form-group"><label>Duration (min)</label><input type="number" id="d-elapsed" value="150" min="30" max="700"/></div>
+          <div class="form-group"><label>Distance (miles)</label><input type="number" id="d-distance" value="800" min="50" max="5000"/></div>
+          <div class="form-group">
+            <label>Month</label>
+            <select id="d-month"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6" selected>June</option><option value="7">July</option></select>
+          </div>
+          <div class="form-group">
+            <label>Day of Week</label>
+            <select id="d-dow"><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5" selected>Friday</option><option value="6">Saturday</option><option value="7">Sunday</option></select>
+          </div>
+          <div class="form-group">
+            <label>Dep Delayed ≥15min?</label>
+            <select id="d-depdel15"><option value="0">No — On time</option><option value="1">Yes — Delayed</option></select>
+          </div>
+        </div>
+      </div>
+      <button class="btn-predict" id="btn-delay" onclick="predictDelay()">✦ &nbsp; Run Delay Prediction</button>
+      <div class="error-bar" id="err-delay"></div>
+      <div class="results" id="results-delay">
+        <div class="results-header">Prediction Output</div>
+        <div class="model-grid">
+          <div class="model-card rf">
+            <div class="model-card-accent"></div>
+            <div class="model-tag"><span class="model-tag-badge rf-badge">RF</span>Random Forest</div>
+            <div class="prob-display"><div class="prob-number" id="val-d-rf">—</div><div class="prob-unit">%<br/>prob</div></div>
+            <div class="gauge-track"><div class="gauge-fill" id="gauge-d-rf"></div></div>
+            <div class="risk-pill" id="badge-d-rf">—</div>
+          </div>
+          <div class="model-card xgb">
+            <div class="model-card-accent"></div>
+            <div class="model-tag"><span class="model-tag-badge xgb-badge">XGB</span>XGBoost</div>
+            <div class="prob-display"><div class="prob-number" id="val-d-xgb">—</div><div class="prob-unit">%<br/>prob</div></div>
+            <div class="gauge-track"><div class="gauge-fill" id="gauge-d-xgb"></div></div>
+            <div class="risk-pill" id="badge-d-xgb">—</div>
+          </div>
+        </div>
+        <div class="verdict-card" id="verdict-delay">
+          <div class="verdict-icon" id="vicon-delay">✈</div>
+          <div class="verdict-body"><h3 id="vtitle-delay">—</h3><p id="vdesc-delay">—</p></div>
+        </div>
+        <div class="compare-bar">
+          <div class="compare-title">Model Comparison</div>
+          <div class="compare-row"><div class="compare-name">Random Forest</div><div class="compare-track"><div class="compare-fill" id="cmp-d-rf" style="background:var(--accent2)"></div></div><div class="compare-val" id="cval-d-rf">—</div></div>
+          <div class="compare-row"><div class="compare-name">XGBoost</div><div class="compare-track"><div class="compare-fill" id="cmp-d-xgb" style="background:var(--accent)"></div></div><div class="compare-val" id="cval-d-xgb">—</div></div>
+        </div>
+      </div>
+      <div class="history-section" id="hist-delay-section" style="display:none">
+        <div class="history-title">Recent Predictions</div>
+        <div class="history-log" id="hist-delay"></div>
+      </div>
+    </div>
+
+    <!-- CANCEL PANEL -->
+    <div id="panel-cancel" class="panel">
+      <div class="panel-title">Cancellation Predictor</div>
+      <div class="panel-desc">// predict probability of flight cancellation</div>
+      <div class="form-section">
+        <div class="section-label">Airline & Route</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Airline</label>
+            <select id="c-airline">
+              <option value="American Airlines Inc.">American Airlines</option><option value="Delta Air Lines Inc.">Delta Air Lines</option><option value="Southwest Airlines Co.">Southwest Airlines</option><option value="United Air Lines Inc.">United Airlines</option><option value="Alaska Airlines Inc.">Alaska Airlines</option><option value="JetBlue Airways">JetBlue Airways</option><option value="Spirit Air Lines">Spirit Air Lines</option><option value="Frontier Airlines Inc.">Frontier Airlines</option><option value="OTHER">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Origin Airport</label>
+            <select id="c-origin">
+              <option value="ATL">ATL — Atlanta</option><option value="ORD">ORD — Chicago</option><option value="DFW">DFW — Dallas</option><option value="DEN">DEN — Denver</option><option value="CLT">CLT — Charlotte</option><option value="LAX">LAX — Los Angeles</option><option value="LAS">LAS — Las Vegas</option><option value="PHX">PHX — Phoenix</option><option value="MCO">MCO — Orlando</option><option value="SEA">SEA — Seattle</option><option value="EWR">EWR — Newark</option><option value="SFO">SFO — San Francisco</option><option value="BOS">BOS — Boston</option><option value="JFK">JFK — New York</option><option value="MIA">MIA — Miami</option><option value="OTHER">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Destination Airport</label>
+            <select id="c-dest">
+              <option value="ATL">ATL — Atlanta</option><option value="ORD">ORD — Chicago</option><option value="DFW">DFW — Dallas</option><option value="DEN">DEN — Denver</option><option value="CLT">CLT — Charlotte</option><option value="LAX">LAX — Los Angeles</option><option value="LAS">LAS — Las Vegas</option><option value="PHX">PHX — Phoenix</option><option value="MCO">MCO — Orlando</option><option value="SEA">SEA — Seattle</option><option value="EWR">EWR — Newark</option><option value="SFO">SFO — San Francisco</option><option value="BOS">BOS — Boston</option><option value="JFK">JFK — New York</option><option value="MIA">MIA — Miami</option><option value="OTHER">Other</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="form-section">
+        <div class="section-label">Schedule & Context</div>
+        <div class="form-grid">
+          <div class="form-group"><label>Dep Time (HHMM)</label><input type="number" id="c-deptime" value="800" min="0" max="2359"/></div>
+          <div class="form-group"><label>Arr Time (HHMM)</label><input type="number" id="c-arrtime" value="1000" min="0" max="2359"/></div>
+          <div class="form-group"><label>Duration (min)</label><input type="number" id="c-elapsed" value="150" min="30" max="700"/></div>
+          <div class="form-group"><label>Distance (miles)</label><input type="number" id="c-distance" value="800" min="50" max="5000"/></div>
+          <div class="form-group"><label>Month</label><select id="c-month"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6" selected>June</option><option value="7">July</option></select></div>
+          <div class="form-group"><label>Day of Month</label><input type="number" id="c-dayofmonth" value="15" min="1" max="31"/></div>
+          <div class="form-group"><label>Day of Week</label><select id="c-dow"><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5" selected>Friday</option><option value="6">Saturday</option><option value="7">Sunday</option></select></div>
+          <div class="form-group"><label>Distance Group (1–11)</label><input type="number" id="c-distgrp" value="3" min="1" max="11"/></div>
+        </div>
+      </div>
+      <button class="btn-predict" id="btn-cancel" onclick="predictCancel()">✦ &nbsp; Run Cancellation Prediction</button>
+      <div class="error-bar" id="err-cancel"></div>
+      <div class="results" id="results-cancel">
+        <div class="results-header">Prediction Output</div>
+        <div class="model-grid">
+          <div class="model-card rf">
+            <div class="model-card-accent"></div>
+            <div class="model-tag"><span class="model-tag-badge rf-badge">RF</span>Random Forest</div>
+            <div class="prob-display"><div class="prob-number" id="val-c-rf">—</div><div class="prob-unit">%<br/>prob</div></div>
+            <div class="gauge-track"><div class="gauge-fill" id="gauge-c-rf"></div></div>
+            <div class="risk-pill" id="badge-c-rf">—</div>
+          </div>
+          <div class="model-card xgb">
+            <div class="model-card-accent"></div>
+            <div class="model-tag"><span class="model-tag-badge xgb-badge">XGB</span>XGBoost</div>
+            <div class="prob-display"><div class="prob-number" id="val-c-xgb">—</div><div class="prob-unit">%<br/>prob</div></div>
+            <div class="gauge-track"><div class="gauge-fill" id="gauge-c-xgb"></div></div>
+            <div class="risk-pill" id="badge-c-xgb">—</div>
+          </div>
+        </div>
+        <div class="verdict-card" id="verdict-cancel">
+          <div class="verdict-icon" id="vicon-cancel">✈</div>
+          <div class="verdict-body"><h3 id="vtitle-cancel">—</h3><p id="vdesc-cancel">—</p></div>
+        </div>
+        <div class="compare-bar">
+          <div class="compare-title">Model Comparison</div>
+          <div class="compare-row"><div class="compare-name">Random Forest</div><div class="compare-track"><div class="compare-fill" id="cmp-c-rf" style="background:var(--accent2)"></div></div><div class="compare-val" id="cval-c-rf">—</div></div>
+          <div class="compare-row"><div class="compare-name">XGBoost</div><div class="compare-track"><div class="compare-fill" id="cmp-c-xgb" style="background:var(--accent)"></div></div><div class="compare-val" id="cval-c-xgb">—</div></div>
+        </div>
+      </div>
+      <div class="history-section" id="hist-cancel-section" style="display:none">
+        <div class="history-title">Recent Predictions</div>
+        <div class="history-log" id="hist-cancel"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<footer>
+  <span>FlightSense · BC2407 Team 2 Class 6 · NTU</span>
+  <span>API: flight-api-4prg.onrender.com</span>
+  <span>RF + XGBoost · 2022 US Domestic Flights</span>
+</footer>
+
+<script>
+const API = 'https://flight-api-4prg.onrender.com';
+
+function switchMode(name, el) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+function riskLevel(p) { return p < 0.3 ? 'low' : p < 0.6 ? 'medium' : 'high'; }
+function riskLabel(p) { return p < 0.3 ? '✓ Low Risk' : p < 0.6 ? '⚠ Medium Risk' : '✕ High Risk'; }
+function riskColor(p) { return p < 0.3 ? 'var(--accent3)' : p < 0.6 ? 'var(--warn)' : 'var(--accent)'; }
+
+function renderCard(valId, gaugeId, badgeId, cmpId, cvalId, prob) {
+  const pct = Math.round(prob * 100);
+  const color = riskColor(prob);
+  const num = document.getElementById(valId);
+  num.textContent = pct;
+  num.style.color = color;
+  setTimeout(() => {
+    document.getElementById(gaugeId).style.width = pct + '%';
+    document.getElementById(gaugeId).style.background = color;
+    document.getElementById(cmpId).style.width = pct + '%';
+  }, 80);
+  const badge = document.getElementById(badgeId);
+  badge.textContent = riskLabel(prob);
+  badge.className = 'risk-pill risk-' + riskLevel(prob);
+  document.getElementById(cvalId).textContent = pct + '%';
+  document.getElementById(cvalId).style.color = color;
+}
+
+function renderVerdict(prefix, rf, xgb) {
+  const avg = (rf + xgb) / 2;
+  const lvl = riskLevel(avg);
+  const isDelay = prefix === 'delay';
+  const icon = document.getElementById('vicon-' + prefix);
+  const title = document.getElementById('vtitle-' + prefix);
+  const desc = document.getElementById('vdesc-' + prefix);
+  icon.className = 'verdict-icon ' + lvl;
+  const pct = Math.round(avg * 100);
+  const agree = Math.abs(rf - xgb) < 0.1 ? 'Both models agree.' : 'Models show some divergence — use the average as your guide.';
+  if (lvl === 'low') {
+    icon.textContent = '✓';
+    title.textContent = isDelay ? 'Low Delay Risk — Flight Looks Good' : 'Low Cancellation Risk — Flight Looks Stable';
+    desc.textContent = `${pct}% average probability. ${agree} This flight is unlikely to be disrupted.`;
+  } else if (lvl === 'medium') {
+    icon.textContent = '⚠';
+    title.textContent = isDelay ? 'Moderate Delay Risk — Monitor Closely' : 'Moderate Cancellation Risk — Stay Alert';
+    desc.textContent = `${pct}% average probability. ${agree} Some risk factors detected. Check for weather advisories.`;
+  } else {
+    icon.textContent = '✕';
+    title.textContent = isDelay ? 'High Delay Risk — Expect Disruption' : 'High Cancellation Risk — Consider Alternatives';
+    desc.textContent = `${pct}% average probability. ${agree} Significant risk detected. Consider rebooking or building in buffer time.`;
+  }
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 10000);
+}
+
+function addHistory(type, label, rf, xgb) {
+  document.getElementById('hist-' + type + '-section').style.display = 'block';
+  const log = document.getElementById('hist-' + type);
+  const avg = (rf + xgb) / 2;
+  const pct = Math.round(avg * 100);
+  const lvl = riskLevel(avg);
+  const colors = { low: 'var(--accent3)', medium: 'var(--warn)', high: 'var(--accent)' };
+  const item = document.createElement('div');
+  item.className = 'history-item';
+  const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  item.innerHTML = `<span class="history-badge" style="background:${colors[lvl]}20;color:${colors[lvl]}">${pct}%</span><span>${label}</span><span style="font-size:0.63rem;color:var(--muted)">RF:${Math.round(rf*100)}% XGB:${Math.round(xgb*100)}%</span><span class="history-time">${now}</span>`;
+  log.insertBefore(item, log.firstChild);
+  if (log.children.length > 5) log.removeChild(log.lastChild);
+}
+
+async function predictDelay() {
+  const btn = document.getElementById('btn-delay');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+  document.getElementById('results-delay').classList.remove('visible');
+  const body = {
+    Airline: document.getElementById('d-airline').value,
+    Origin: document.getElementById('d-origin').value,
+    Dest: document.getElementById('d-dest').value,
+    CRSDepTime: document.getElementById('d-deptime').value,
+    CRSElapsedTime: document.getElementById('d-elapsed').value,
+    Distance: document.getElementById('d-distance').value,
+    Month: document.getElementById('d-month').value,
+    DayOfWeek: document.getElementById('d-dow').value,
+    DepDel15: document.getElementById('d-depdel15').value
+  };
+  try {
+    const res = await fetch(API + '/predict/delay', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error('API returned ' + res.status);
+    const data = await res.json();
+    const rf  = Array.isArray(data) ? data[0].rf_delay_prob  : data.rf_delay_prob;
+    const xgb = Array.isArray(data) ? data[0].xgb_delay_prob : data.xgb_delay_prob;
+    renderCard('val-d-rf',  'gauge-d-rf',  'badge-d-rf',  'cmp-d-rf',  'cval-d-rf',  rf);
+    renderCard('val-d-xgb', 'gauge-d-xgb', 'badge-d-xgb', 'cmp-d-xgb', 'cval-d-xgb', xgb);
+    renderVerdict('delay', rf, xgb);
+    document.getElementById('results-delay').classList.add('visible');
+    addHistory('delay', `${body.Origin}→${body.Dest}`, rf, xgb);
+  } catch(e) {
+    showError('err-delay', '✕ ' + e.message + ' — Note: free Render servers sleep after inactivity. First request may take ~30 seconds to wake up. Please try again.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '✦ &nbsp; Run Delay Prediction';
+  }
+}
+
+async function predictCancel() {
+  const btn = document.getElementById('btn-cancel');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+  document.getElementById('results-cancel').classList.remove('visible');
+  const body = {
+    Airline: document.getElementById('c-airline').value,
+    Origin: document.getElementById('c-origin').value,
+    Dest: document.getElementById('c-dest').value,
+    CRSDepTime: document.getElementById('c-deptime').value,
+    CRSArrTime: document.getElementById('c-arrtime').value,
+    CRSElapsedTime: document.getElementById('c-elapsed').value,
+    Distance: document.getElementById('c-distance').value,
+    Month: document.getElementById('c-month').value,
+    DayofMonth: document.getElementById('c-dayofmonth').value,
+    DayOfWeek: document.getElementById('c-dow').value,
+    DistanceGroup: document.getElementById('c-distgrp').value
+  };
+  try {
+    const res = await fetch(API + '/predict/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error('API returned ' + res.status);
+    const data = await res.json();
+    const rf  = Array.isArray(data) ? data[0].rf_cancel_prob  : data.rf_cancel_prob;
+    const xgb = Array.isArray(data) ? data[0].xgb_cancel_prob : data.xgb_cancel_prob;
+    renderCard('val-c-rf',  'gauge-c-rf',  'badge-c-rf',  'cmp-c-rf',  'cval-c-rf',  rf);
+    renderCard('val-c-xgb', 'gauge-c-xgb', 'badge-c-xgb', 'cmp-c-xgb', 'cval-c-xgb', xgb);
+    renderVerdict('cancel', rf, xgb);
+    document.getElementById('results-cancel').classList.add('visible');
+    addHistory('cancel', `${body.Origin}→${body.Dest}`, rf, xgb);
+  } catch(e) {
+    showError('err-cancel', '✕ ' + e.message + ' — Note: free Render servers sleep after inactivity. First request may take ~30 seconds to wake up. Please try again.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '✦ &nbsp; Run Cancellation Prediction';
+  }
+}
+</script>
+</body>
+</html>
